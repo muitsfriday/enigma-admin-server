@@ -1,0 +1,7 @@
+POST http://localhost:8080/experiment
+Content-Type: application/json
+
+{
+    "title": "Mu test experiment",
+    "description": "Mu test experiment"
+}
