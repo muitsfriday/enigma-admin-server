@@ -1,13 +1,12 @@
 use actix_web::{web, HttpResponse, Responder};
+use serde::Deserialize;
 
+#[derive(Deserialize)]
 pub struct CreateExperimentRequest {
     title: String,
     description: String,
 }
 
-pub async fn handler(
-    data: web::Json<CreateExperimentRequest>,
-    // experiment_coll: web::Data<Collection<Experiment>>,
-) -> impl Responder {
-    HttpResponse::Ok().body(format!("Hello world! {}", data.title))
+pub async fn handle(data: web::Json<CreateExperimentRequest>) -> impl Responder {
+    HttpResponse::Ok().body(format!("Hello world! {} {}", data.title, data.description))
 }
