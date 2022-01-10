@@ -1,12 +1,19 @@
+use std::error::Error;
+
+use crate::service::repo::ExperimentRepo;
+
+#[derive(Clone)]
 pub struct Experiment {
-    title: String,
-    descrition: String,
+    pub id: Option<String>,
+    pub title: String,
+    pub description: String,
 }
 
-pub struct ExperimentService {}
+pub async fn create(
+    repo: &impl ExperimentRepo,
+    expr: Experiment,
+) -> Result<Experiment, Box<dyn Error>> {
+    let save_result = repo.save(expr.clone()).await?;
 
-impl ExperimentService {
-    pub fn new() -> Self {
-        ExperimentService {}
-    }
+    Ok(save_result)
 }

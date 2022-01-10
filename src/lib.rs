@@ -1,52 +1,61 @@
-use actix_web::web;
-use mongodb::{options::ClientOptions, Client, Collection, Database};
-use std::error::Error;
+use actix_web::{web, App, HttpServer};
 
 mod handler;
+mod mongo;
 mod service;
 
-pub struct MongoDB {
-    url: String,
-    dbname: String,
-    db_instance: Option<Database>,
+use service::repo::{ExperimentMongoDocument, ExperimentMongoRepo, ExperimentRepo};
+
+pub struct ServerConfig {
+    pub url: String,
+    pub mongo_url: String,
+    pub mongo_dbname: String,
+    pub mongo_expr_collname: String,
 }
 
-impl MongoDB {
-    pub fn new(url: &str, dbname: &str) -> Self {
-        MongoDB {
-            url: url.to_owned(),
-            dbname: dbname.to_owned(),
-            db_instance: None,
-        }
+pub struct Server<'a> {
+    conf: &'a ServerConfig,
+}
+
+impl<'a> Server<'a> {
+    pub fn new(conf: &'a ServerConfig) -> Self {
+        Server { conf }
     }
 
-    async fn connect(&mut self) -> Result<&Database, Box<dyn Error>> {
-        if let Some(ref db) = self.db_instance {
-            return Result::Ok(db);
-        }
+    pub async fn run(&self) -> std::io::Result<()> {
+        // init mongo db
+        let mut mongodb = mongo::MongoDB::new(&self.conf.mongo_url, &self.conf.mongo_dbname);
+        let _ = mongodb.connect().await;
 
-        let opts = ClientOptions::parse(&self.url).await?;
-        let client = Client::with_options(opts)?;
-        self.db_instance = Some(client.database(&self.dbname));
+        let experiment_coll = mongodb
+            .collection::<ExperimentMongoDocument>(&self.conf.mongo_expr_collname)
+            .await
+            .unwrap_or_else(|err| {
+                panic!(
+                    "{} {}",
+                    "Cannot initiate experiment repo (mongo)",
+                    err.to_string()
+                );
+            });
 
-        match self.db_instance {
-            Some(ref db) => Result::Ok(db),
-            None => Result::Err("cannot connect database".into()),
-        }
-    }
+        let experiment_repo = ExperimentMongoRepo::new(experiment_coll);
 
-    pub async fn collection<T>(&mut self, colname: &str) -> Result<Collection<T>, Box<dyn Error>> {
-        let db = self.connect().await?;
-        let col = db.collection::<T>(&colname);
+        println!("{}", &self.conf.mongo_url);
 
-        Result::Ok(col)
+        // init http server
+        HttpServer::new(move || {
+            App::new()
+                .app_data(experiment_repo.clone())
+                .configure(register_handler::<ExperimentMongoRepo>)
+        })
+        .bind(&self.conf.url)?
+        .run()
+        .await
     }
 }
 
-pub fn register_handler<'a>(cfg: &'a mut web::ServiceConfig) -> impl FnMut() + 'a {
-    move || {
-        cfg.service(
-            web::resource("/experiment").route(web::post().to(handler::experiment_create::handle)),
-        );
-    }
+pub fn register_handler<T: ExperimentRepo + 'static>(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::resource("/experiment").route(web::post().to(handler::experiment_create::handle::<T>)),
+    );
 }

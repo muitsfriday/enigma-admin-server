@@ -1,13 +1,14 @@
+use async_trait::async_trait;
 use std::error::Error;
 
-pub mod mongo;
+mod mongo;
 
-pub struct Experiment {
-    id: Option<String>,
-    title: String,
-    description: String,
-}
+pub use mongo::Document as ExperimentMongoDocument;
+pub use mongo::ExperimentMongoRepo;
 
+use super::experiment::Experiment;
+
+#[async_trait]
 pub trait ExperimentRepo {
-    fn save(expr: Experiment) -> Result<Experiment, Box<dyn Error>>;
+    async fn save(&self, expr: Experiment) -> Result<Experiment, Box<dyn Error>>;
 }
