@@ -8,6 +8,8 @@ services:
       - ./:/usr/src/enigma-server
     ports:
       - 8080:8080
+    env_file:
+      - .env
     environment:
       - MY_LOG_LEVEL=info
       - MY_LOG_STYLE=Always
