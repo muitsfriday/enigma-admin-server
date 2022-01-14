@@ -9,6 +9,6 @@ pub use mongo::ExperimentMongoRepo;
 use super::experiment::Experiment;
 
 #[async_trait]
-pub trait ExperimentRepo {
+pub trait ExperimentRepo: Sync {
     async fn save(&self, expr: Experiment) -> Result<Experiment, Box<dyn Error>>;
 }

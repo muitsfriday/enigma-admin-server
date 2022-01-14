@@ -26,12 +26,13 @@ impl Into<experiment_serice::Experiment> for RequestPayload {
     }
 }
 
-pub async fn handle<T: repo::ExperimentRepo>(
+pub async fn handle(
     payload: web::Json<RequestPayload>,
-    repo: web::Data<T>,
+    repo: web::Data<dyn repo::ExperimentRepo>,
 ) -> impl Responder {
     let data: experiment_serice::Experiment = payload.into_inner().into();
-    let result = experiment_serice::create(repo.get_ref(), data).await;
+    let r = repo.into_inner().as_ref();
+    let result = experiment_serice::create(r, data).await;
 
     match result {
         Ok(data) => HttpResponse::Ok().json(ResponsePayload {
