@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use std::error::Error;
 
-mod mongo;
+pub mod mongo;
 
 pub use mongo::Document as ExperimentMongoDocument;
 pub use mongo::ExperimentMongoRepo;

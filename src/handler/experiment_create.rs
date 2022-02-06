@@ -1,13 +1,15 @@
 use actix_web::{web, HttpResponse, Responder};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::service::experiment as experiment_serice;
-use crate::service::repo;
+use crate::service::{experiment, repo};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct RequestPayload {
     title: String,
     description: String,
+    active_interval_from: DateTime<Utc>,
+    active_interval_to: DateTime<Utc>,
 }
 
 #[derive(Serialize)]
@@ -16,23 +18,27 @@ pub struct ResponsePayload {
     description: String,
 }
 
-impl Into<experiment_serice::Experiment> for RequestPayload {
-    fn into(self) -> experiment_serice::Experiment {
-        experiment_serice::Experiment {
+impl Into<experiment::Experiment> for RequestPayload {
+    fn into(self) -> experiment::Experiment {
+        experiment::Experiment {
             id: None,
             title: self.title,
             description: self.description,
+            active_interval: None,
+            created_at: None,
+            updated_at: None,
+            deleted_at: None,
         }
     }
 }
 
-pub async fn handle(
+pub async fn handle<T: repo::ExperimentRepo>(
     payload: web::Json<RequestPayload>,
-    repo: web::Data<dyn repo::ExperimentRepo>,
+    repo: web::Data<T>,
 ) -> impl Responder {
-    let data: experiment_serice::Experiment = payload.into_inner().into();
-    let r = repo.into_inner().as_ref();
-    let result = experiment_serice::create(r, data).await;
+    let x = payload.into_inner();
+    let data: experiment::Experiment = x.into();
+    let result = experiment::create(Box::new(repo.into_inner().as_ref()), data).await;
 
     match result {
         Ok(data) => HttpResponse::Ok().json(ResponsePayload {
