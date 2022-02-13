@@ -4,6 +4,42 @@ Content-Type: application/json
 {
     "title": "Mu test experiment",
     "description": "Mu test experiment",
-    "active_interval_from": "2007-04-05T14:30:30",
-    "active_interval_to": "2007-04-05T14:30:30"
+    "active_interval_from": "2007-04-05T14:30:30Z",
+    "active_interval_to": "2007-04-05T14:30:30Z",
+    "variations": [
+        { 
+            "group": "A",
+            "description": "Treatment A",
+            "indicator": "treatment-a",
+            "weight": 1,
+            "values": {
+                "var1": "A",
+                "var2": 1
+            }
+        },
+        { 
+            "group": "B",
+            "description": "Treatment B",
+            "indicator": "treatment-b",
+            "weight": 1,
+            "values": {
+                "var1": "B",
+                "var2": 2
+            }
+        },
+        { 
+            "group": "Control",
+            "description": "Control group",
+            "indicator": "control",
+            "weight": 1,
+            "values": {
+                "var1": "",
+                "var2": 0
+            }
+        }
+    ],
+    "group_assign": {
+        "strategy": "random",
+        "persistent": "key_contextual"
+    }
 }
