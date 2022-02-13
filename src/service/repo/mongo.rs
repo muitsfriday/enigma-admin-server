@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use bson::Bson;
 use chrono::{serde::ts_milliseconds_option, DateTime, Utc};
-use mongodb::Collection;
+use mongodb::{bson::doc, bson::oid, Collection};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
@@ -11,7 +11,7 @@ use super::ExperimentRepo;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Document {
-    pub id: Option<String>,
+    pub _id: Option<oid::ObjectId>,
     pub title: String,
     pub description: String,
     pub active_interval: Option<Interval>,
@@ -53,11 +53,9 @@ pub struct GroupAssignment {
 
 impl From<ExperimentService::Experiment> for Document {
     fn from(data: ExperimentService::Experiment) -> Self {
-        let active_interval = match data.active_interval {
-            Some(act) => Some(Interval::from(act)),
-            None => None,
-        };
-
+        println!("{:?}", data);
+        let _id = data.id.map(|id| oid::ObjectId::parse_str(id).unwrap());
+        let active_interval = data.active_interval.map(|act| Interval(act.0, act.1));
         let variations = data
             .variations
             .iter()
@@ -71,7 +69,7 @@ impl From<ExperimentService::Experiment> for Document {
             .collect();
 
         Document {
-            id: data.id,
+            _id: None,
             title: data.title,
             description: data.description,
             active_interval: active_interval,
@@ -87,6 +85,49 @@ impl From<ExperimentService::Experiment> for Document {
     }
 }
 
+impl From<Document> for ExperimentService::Experiment {
+    fn from(val: Document) -> Self {
+        let id = match val._id {
+            Some(oid) => Some(oid.to_string()),
+            None => None,
+        };
+
+        let active_interval = match val.active_interval {
+            Some(act) => Some(ExperimentService::Interval(act.0, act.1)),
+            None => None,
+        };
+
+        let variations = val
+            .variations
+            .into_iter()
+            .map(|v| ExperimentService::Varience {
+                group: v.group,
+                description: v.description,
+                indicator: v.indicator,
+                weight: v.weight,
+                values: v.values,
+            })
+            .collect();
+
+        ExperimentService::Experiment {
+            id,
+            title: val.title.clone(),
+            description: val.description.clone(),
+            active_interval,
+            created_at: val.created_at.clone(),
+            updated_at: val.updated_at.clone(),
+            deleted_at: val.deleted_at.clone(),
+            variations,
+            group_assign: ExperimentService::GroupAssignment {
+                strategy: val.group_assign.strategy.clone(),
+                persistent: val.group_assign.persistent.clone(),
+            },
+        }
+    }
+}
+
+/// ExperimentMongoRepo
+/// is a struct managing about how to save and get the given experiment document to mongo.
 pub struct ExperimentMongoRepo {
     coll: Collection<Document>,
 }
@@ -99,6 +140,23 @@ impl ExperimentMongoRepo {
 
 #[async_trait]
 impl ExperimentRepo for ExperimentMongoRepo {
+    /// get method is for retrieving a specific document from mongodb.
+    async fn get(&self, id: &str) -> Result<ExperimentService::Experiment, Box<dyn Error>> {
+        let object_id = oid::ObjectId::parse_str(id)
+            .map_err(|err| std::io::Error::new(std::io::ErrorKind::NotFound, err.to_string()))?;
+        let doc = self.coll.find_one(doc! { "_id": object_id }, None).await?;
+        println!("{:?}", doc);
+
+        match doc {
+            Some(doc) => Ok(ExperimentService::Experiment::from(doc)),
+            None => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "document not found",
+            ))),
+        }
+    }
+
+    /// save method is for save the given document to mongo db.
     async fn save(
         &self,
         data: ExperimentService::Experiment,
@@ -113,7 +171,15 @@ impl ExperimentRepo for ExperimentMongoRepo {
             document.created_at = Some(now);
         }
 
+        if let None = document._id {
+            document._id = Some(oid::ObjectId::new());
+        }
+
         let insert_result = self.coll.insert_one(document, None).await?;
+        println!(
+            "insert_result.inserted_id == {:?}",
+            insert_result.inserted_id
+        );
 
         if let Bson::ObjectId(ref id) = insert_result.inserted_id {
             r.id = Some(id.to_hex());

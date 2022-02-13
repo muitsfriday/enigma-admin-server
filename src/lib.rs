@@ -26,5 +26,9 @@ pub async fn run<T: repo::ExperimentRepo + Send + Sync + Clone + 'static>(
 pub fn register_handler<T: repo::ExperimentRepo + 'static>(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/experiment").route(web::post().to(handler::experiment_create::handle::<T>)),
+    )
+    .service(
+        web::resource("/experiment/{id}")
+            .route(web::get().to(handler::experiment_get::handle::<T>)),
     );
 }

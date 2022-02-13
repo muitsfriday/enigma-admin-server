@@ -11,4 +11,5 @@ use super::experiment::Experiment;
 #[async_trait]
 pub trait ExperimentRepo: Sync {
     async fn save(&self, expr: Experiment) -> Result<Experiment, Box<dyn Error>>;
+    async fn get(&self, id: &str) -> Result<Experiment, Box<dyn Error>>;
 }

@@ -6,6 +6,7 @@ use std::error::Error;
 use crate::service::repo::ExperimentRepo;
 
 pub trait Repo {
+    fn get(&self, id: &str) -> Result<Experiment, std::io::Error>;
     fn create(&self, data: Experiment) -> Result<Experiment, std::io::Error>;
 }
 
@@ -45,6 +46,13 @@ pub struct GroupAssignment {
     pub persistent: String,
 }
 
+/// Get an experiment.
+pub async fn get(repo: Box<&dyn ExperimentRepo>, id: &str) -> Result<Experiment, Box<dyn Error>> {
+    let experiment = repo.get(id).await?;
+
+    Ok(experiment)
+}
+
 /// Create a new experiment.
 pub async fn create(
     repo: Box<&dyn ExperimentRepo>,
@@ -53,7 +61,7 @@ pub async fn create(
     let mut data = data.clone();
     data.created_at = Some(Utc::now());
 
-    let save_result = repo.save(data.clone()).await?;
+    let experiment = repo.save(data.clone()).await?;
 
-    Ok(save_result)
+    Ok(experiment)
 }
