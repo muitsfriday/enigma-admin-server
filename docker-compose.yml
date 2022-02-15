@@ -26,6 +26,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     volumes:
       - /data/mongo:/data/db
+    logging:
+      driver: none
 
   mongo-express:
     image: mongo-express

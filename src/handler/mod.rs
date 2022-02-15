@@ -20,6 +20,7 @@ pub struct Experiment {
     active_interval: Option<Interval>,
     variations: Vec<Varience>,
     group_assign: experiment::GroupAssignment,
+    owner: Option<experiment::User>,
 }
 
 /// Interval is a tuple struct contains information abount datetime range.
@@ -83,6 +84,7 @@ impl Into<experiment::Experiment> for Experiment {
             updated_at: None,
             deleted_at: None,
             group_assign: self.group_assign.into(),
+            owner: self.owner,
         }
     }
 }
@@ -113,6 +115,7 @@ impl From<experiment::Experiment> for Experiment {
                 strategy: val.group_assign.strategy,
                 persistent: val.group_assign.persistent,
             },
+            owner: val.owner.map(|u| experiment::User { ..u }),
         }
     }
 }

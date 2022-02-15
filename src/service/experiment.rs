@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
 
+pub use super::User;
 use crate::service::repo::ExperimentRepo;
 
 pub trait Repo {
@@ -25,6 +26,8 @@ pub struct Experiment {
 
     pub variations: Vec<Varience>,
     pub group_assign: GroupAssignment,
+
+    pub owner: Option<User>,
 }
 
 /// Interval is a tuple struct contains information abount datetime range.

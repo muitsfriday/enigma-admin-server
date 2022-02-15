@@ -1,13 +1,25 @@
 use actix_web::{web, App, HttpServer};
 
+pub mod auth;
 mod handler;
+mod middleware;
 pub mod mongo;
 pub mod service;
 
+use crate::middleware::Jwt;
 use crate::service::repo;
 
+#[derive(Clone)]
+pub struct ServerConfig {
+    pub url: String,
+    pub mongo_url: String,
+    pub mongo_dbname: String,
+    pub mongo_expr_collname: String,
+    pub jwt_secret: String,
+}
+
 pub async fn run<T: repo::ExperimentRepo + Send + Sync + Clone + 'static>(
-    url: &str,
+    config: ServerConfig,
     experiment_repo: T,
 ) -> std::io::Result<()> {
     let experiment_repo = web::Data::new(experiment_repo);
@@ -15,10 +27,11 @@ pub async fn run<T: repo::ExperimentRepo + Send + Sync + Clone + 'static>(
     // init http server
     HttpServer::new(move || {
         App::new()
+            .wrap(Jwt::new(&config.jwt_secret.clone()))
             .app_data(experiment_repo.clone())
             .configure(register_handler::<T>)
     })
-    .bind(&url)?
+    .bind(&config.url)?
     .run()
     .await
 }

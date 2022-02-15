@@ -1,7 +1,8 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
 use super::*;
+use crate::auth;
 use crate::service::{experiment, repo};
 
 /// RequestPayload is a struct contains data of request body to the create experiment endpoint.
@@ -33,6 +34,7 @@ impl Into<experiment::Experiment> for RequestPayload {
             deleted_at: None,
             variations: vs,
             group_assign: self.group_assign.into(),
+            owner: None,
         }
     }
 }
@@ -45,11 +47,21 @@ pub struct ResponsePayload {
 
 /// Handle method for create the experiment.
 pub async fn handle<T: repo::ExperimentRepo>(
+    req: HttpRequest,
     payload: web::Json<RequestPayload>,
     repo: web::Data<T>,
 ) -> impl Responder {
     let x = payload.into_inner();
-    let data: experiment::Experiment = x.into();
+    let mut data: experiment::Experiment = x.into();
+
+    if let Some(u) = req.extensions().get::<auth::User>() {
+        data.owner = Some(experiment::User {
+            id: u.id.clone(),
+            username: u.username.clone(),
+            alias: u.alias.clone(),
+        });
+    }
+
     let result = experiment::create(Box::new(repo.into_inner().as_ref()), data).await;
 
     match result {

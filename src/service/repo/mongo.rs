@@ -25,6 +25,8 @@ pub struct Document {
 
     pub variations: Vec<Varience>,
     pub group_assign: GroupAssignment,
+
+    pub owner: Option<User>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -49,6 +51,13 @@ pub struct Varience {
 pub struct GroupAssignment {
     pub strategy: String,
     pub persistent: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct User {
+    pub id: String,
+    pub username: String,
+    pub alias: String,
 }
 
 impl From<ExperimentService::Experiment> for Document {
@@ -81,6 +90,11 @@ impl From<ExperimentService::Experiment> for Document {
                 strategy: data.group_assign.strategy,
                 persistent: data.group_assign.persistent,
             },
+            owner: data.owner.map(|u| User {
+                id: u.id,
+                username: u.username,
+                alias: u.alias,
+            }),
         }
     }
 }
@@ -122,6 +136,11 @@ impl From<Document> for ExperimentService::Experiment {
                 strategy: val.group_assign.strategy.clone(),
                 persistent: val.group_assign.persistent.clone(),
             },
+            owner: val.owner.map(|u| ExperimentService::User {
+                id: u.id,
+                username: u.username,
+                alias: u.alias,
+            }),
         }
     }
 }

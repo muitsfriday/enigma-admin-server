@@ -1,5 +1,6 @@
 POST http://localhost:8000/experiment
 Content-Type: application/json
+Authorization: bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjEwMDAwMDAwMDAwMDAsInVzZXIiOnsiaWQiOiJ1c2VyXzAxIiwidXNlcm5hbWUiOiJ0ZXN0YWRtaW4iLCJhbGlhcyI6InRlc3QgYWRtaW4iLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20ifX0.VH_aV-PK80sqdZzwh4Ln4dSQwRZHzwXlAxhVXgxk3Xo
 
 {
     "title": "Mu test experiment",
@@ -47,4 +48,5 @@ Content-Type: application/json
 
 GET http://localhost:8000/experiment/6209676d09416bc0cfbda31a
 Content-Type: application/json
+Authorization: bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjEwMDAwMDAwMDAwMDAsInVzZXIiOnsiaWQiOiJ1c2VyXzAxIiwidXNlcm5hbWUiOiJ0ZXN0YWRtaW4iLCJhbGlhcyI6InRlc3QgYWRtaW4iLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20ifX0.VH_aV-PK80sqdZzwh4Ln4dSQwRZHzwXlAxhVXgxk3Xo
 
