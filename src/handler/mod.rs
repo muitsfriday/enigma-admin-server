@@ -6,8 +6,10 @@ use crate::service::experiment;
 
 pub mod experiment_create;
 pub mod experiment_get;
+pub mod experiment_list;
 
 /// API-wise struct
+///
 ///
 ///
 
@@ -20,7 +22,8 @@ pub struct Experiment {
     active_interval: Option<Interval>,
     variations: Vec<Varience>,
     group_assign: experiment::GroupAssignment,
-    owner: Option<experiment::User>,
+    owner: Option<HashMap<String, serde_json::Value>>,
+    owner_group: String,
 }
 
 /// Interval is a tuple struct contains information abount datetime range.
@@ -85,6 +88,7 @@ impl Into<experiment::Experiment> for Experiment {
             deleted_at: None,
             group_assign: self.group_assign.into(),
             owner: self.owner,
+            owner_group: self.owner_group,
         }
     }
 }
@@ -115,7 +119,8 @@ impl From<experiment::Experiment> for Experiment {
                 strategy: val.group_assign.strategy,
                 persistent: val.group_assign.persistent,
             },
-            owner: val.owner.map(|u| experiment::User { ..u }),
+            owner: val.owner,
+            owner_group: val.owner_group,
         }
     }
 }

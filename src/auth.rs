@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UserToken {
@@ -7,7 +8,23 @@ pub struct UserToken {
     // expiration
     pub exp: i64,
     // data
-    pub user: User,
+    pub user: HashMap<String, serde_json::Value>,
+}
+
+impl UserToken {
+    pub fn get_user_group<'a>(&'a self) -> Option<&'a str> {
+        return self.user.get("group_id").map(|v| v.as_str()).unwrap();
+    }
+
+    pub fn get_user_id<'a>(&'a self) -> Option<&'a str> {
+        return self.user.get("id").map(|v| v.as_str()).unwrap();
+    }
+}
+
+pub fn get_user_group(u: &HashMap<String, serde_json::Value>) -> String {
+    let s = serde_json::Value::default();
+    let h = u.get("group_id").unwrap_or(&s).as_str();
+    return String::from(h.unwrap_or_default());
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -23,7 +40,7 @@ impl UserToken {
         UserToken {
             iat: 0,
             exp: 0,
-            user: User::default(),
+            user: HashMap::default(),
         }
     }
 }

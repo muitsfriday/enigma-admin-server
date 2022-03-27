@@ -1,3 +1,4 @@
+use log::error;
 use std::pin::Pin;
 use std::result::Result;
 
@@ -14,12 +15,12 @@ use crate::auth;
 // 1. Middleware initialization, middleware factory gets called with
 //    next service in chain as parameter.
 // 2. Middleware's call method gets called with normal request.
-pub struct Jwt<'a> {
-    jwt_secret: &'a str,
+pub struct Jwt {
+    jwt_secret: String,
 }
 
-impl<'a> Jwt<'a> {
-    pub fn new(jwt_secret: &'a str) -> Self {
+impl Jwt {
+    pub fn new(jwt_secret: String) -> Self {
         Self { jwt_secret }
     }
 }
@@ -27,7 +28,7 @@ impl<'a> Jwt<'a> {
 // Middleware factory is `Transform` trait from actix-service crate
 // `S` - type of the next service
 // `B` - type of response's body
-impl<'a, S, B> Transform<S, ServiceRequest> for Jwt<'static>
+impl<S, B> Transform<S, ServiceRequest> for Jwt
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
@@ -36,23 +37,23 @@ where
     type Response = ServiceResponse<B>;
     type Error = Error;
     type InitError = ();
-    type Transform = JwtMiddleware<'static, S>;
+    type Transform = JwtMiddleware<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
         ok(JwtMiddleware {
             service,
-            jwt_secret: self.jwt_secret,
+            jwt_secret: self.jwt_secret.clone(),
         })
     }
 }
 
-pub struct JwtMiddleware<'a, S> {
-    jwt_secret: &'a str,
+pub struct JwtMiddleware<S> {
+    jwt_secret: String,
     service: S,
 }
 
-impl<'a, S, B> Service<ServiceRequest> for JwtMiddleware<'a, S>
+impl<S, B> Service<ServiceRequest> for JwtMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
@@ -64,23 +65,19 @@ where
 
     actix_service::forward_ready!(service);
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        println!("--------------------- Request Accepted ----------------------");
-        println!("--- Hi from start. You requested: {}", req.path());
-
         if let Some(authen_header) = req.headers().get("Authorization") {
             if let Ok(authen_str) = authen_header.to_str() {
                 if authen_str.to_lowercase().starts_with("bearer") {
                     let token = authen_str[6..authen_str.len()].trim();
-                    println!("--- Request Token: {}", token);
 
-                    let token = decode_token(token, self.jwt_secret).unwrap_or_else(|err| {
-                        println!("Token Error: {}", err);
+                    let token =
+                        decode_token(token, self.jwt_secret.as_ref()).unwrap_or_else(|err| {
+                            error!("Unable to unwrap jwt uyser token {}", err);
 
-                        auth::UserToken::default()
-                    });
+                            auth::UserToken::default()
+                        });
 
-                    println!("Access as User: {:?}", token.user);
-                    req.extensions_mut().insert(token.user);
+                    req.extensions_mut().insert(token);
                 }
             }
         }
@@ -89,8 +86,6 @@ where
 
         Box::pin(async move {
             let res = fut.await?;
-
-            println!("Hi from response");
             Ok(res)
         })
     }
