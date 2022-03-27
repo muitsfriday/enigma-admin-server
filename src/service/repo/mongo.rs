@@ -211,7 +211,7 @@ impl ExperimentRepo for ExperimentMongoRepo {
 
         let mut cur = self
             .coll
-            .find(doc! { "group_id": group_id }, options)
+            .find(doc! { "owner_group": group_id }, options)
             .await?;
 
         let mut result: Vec<ServiceExperiment> = vec![];

@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::error::Error;
 
 use super::Context;
-use crate::service::repo::ExperimentRepo;
 
 /// Trait `Repo` represent an ablity which reflect the experiment repository.
 /// The following method is to be implement for do the CRUD job to the persistent database.
@@ -65,7 +64,7 @@ pub struct GroupAssignment {
 }
 
 /// Get an experiment.
-pub async fn get(repo: Box<&dyn ExperimentRepo>, id: &str) -> Result<Experiment, Box<dyn Error>> {
+pub async fn get(repo: Box<&dyn Repo>, id: &str) -> Result<Experiment, Box<dyn Error>> {
     let experiment = repo.get(id).await?;
 
     Ok(experiment)
