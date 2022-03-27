@@ -1,13 +1,15 @@
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 
 use super::*;
 use crate::auth;
-use crate::service::{experiment, repo};
+use crate::service::experiment;
+use crate::service::experiment::Repo as ExperimentRepo;
 
 /// RequestPayload is a struct contains data of request body to the create experiment endpoint.
 ///
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequestPayload {
     title: String,
     description: String,
@@ -35,6 +37,7 @@ impl Into<experiment::Experiment> for RequestPayload {
             variations: vs,
             group_assign: self.group_assign.into(),
             owner: None,
+            owner_group: String::default(),
         }
     }
 }
@@ -46,28 +49,33 @@ pub struct ResponsePayload {
 }
 
 /// Handle method for create the experiment.
-pub async fn handle<T: repo::ExperimentRepo>(
+pub async fn handle<T: ExperimentRepo>(
     req: HttpRequest,
     payload: web::Json<RequestPayload>,
     repo: web::Data<T>,
 ) -> impl Responder {
-    let x = payload.into_inner();
-    let mut data: experiment::Experiment = x.into();
+    info!("Create a new experiment with payload {:?}", payload);
 
-    if let Some(u) = req.extensions().get::<auth::User>() {
-        data.owner = Some(experiment::User {
-            id: u.id.clone(),
-            username: u.username.clone(),
-            alias: u.alias.clone(),
-        });
+    let mut data: experiment::Experiment = payload.into_inner().into();
+
+    if let Some(ut) = req.extensions().get::<auth::UserToken>() {
+        info!("Create a new experiment by {:?}", ut);
+        data.owner = Some(ut.user.clone());
+        data.owner_group = auth::get_user_group(&ut.user);
+    } else {
+        warn!("Create experiment without a proper `user` jwt")
     }
 
-    let result = experiment::create(Box::new(repo.into_inner().as_ref()), data).await;
+    let result = experiment::create(Box::new(repo.into_inner().as_ref()), &mut data).await;
 
     match result {
-        Ok(data) => HttpResponse::Ok().json(ResponsePayload {
+        Ok(_) => HttpResponse::Ok().json(ResponsePayload {
             data: Experiment::from(data),
         }),
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+        Err(err) => {
+            error!("Unable to create an experiment");
+
+            return HttpResponse::InternalServerError().body(err.to_string());
+        }
     }
 }

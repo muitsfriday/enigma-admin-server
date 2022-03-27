@@ -1,11 +1,8 @@
-use serde::{Deserialize, Serialize};
-
 pub mod experiment;
 pub mod repo;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct User {
-    pub id: String,
-    pub username: String,
-    pub alias: String,
+#[derive(Debug)]
+pub struct Context<'a> {
+    pub user_id: &'a str,
+    pub user_group_id: &'a str,
 }

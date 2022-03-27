@@ -1,4 +1,5 @@
 use dotenv::dotenv;
+use env_logger::Env;
 use mongodb::Collection;
 use std::env;
 
@@ -6,7 +7,8 @@ use enigma_server::mongo::MongoDB;
 use enigma_server::run;
 use enigma_server::service::repo::mongo::Document as ExperimentMongoDocument;
 use enigma_server::service::repo::mongo::ExperimentMongoRepo;
-use enigma_server::ServerConfig;
+use enigma_server::Config as ServerConfig;
+use enigma_server::Dependency as ServerDependency;
 
 fn init_server_config() -> ServerConfig {
     ServerConfig {
@@ -16,6 +18,7 @@ fn init_server_config() -> ServerConfig {
         mongo_expr_collname: env::var("MONGO_COLLECTION_EXPERIMENT")
             .expect("DATABASE_URL is not found in env"),
         jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET is not found in env"),
+        experiment_item_per_page: 10,
     }
 }
 
@@ -36,16 +39,21 @@ async fn init_mongo(server_config: &ServerConfig) -> Collection<ExperimentMongoD
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // init dotenv
     dotenv().ok();
 
-    // init logger middleware
-    env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
-    env_logger::init();
+    env::set_var("RUST_LOG", "actix_web=info,actix_server=info");
+
+    let env = Env::default()
+        .filter_or("LOG_LEVEL", "info")
+        .write_style_or("LOG_STYLE", "always");
+    env_logger::init_from_env(env);
 
     let server_config = init_server_config();
+
     let experiment_collection = init_mongo(&server_config).await;
     let experiment_repo = ExperimentMongoRepo::new(experiment_collection);
 
-    run(server_config, experiment_repo).await
+    let dependency = ServerDependency { experiment_repo };
+
+    run(server_config, dependency).await
 }

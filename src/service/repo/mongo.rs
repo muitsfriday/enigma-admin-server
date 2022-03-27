@@ -1,13 +1,16 @@
 use async_trait::async_trait;
 use bson::Bson;
 use chrono::{serde::ts_milliseconds_option, DateTime, Utc};
-use mongodb::{bson::doc, bson::oid, Collection};
+use futures::TryStreamExt;
+use mongodb::{bson::doc, bson::oid, options::FindOptions, Collection};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
 
 use super::super::experiment as ExperimentService;
-use super::ExperimentRepo;
+use super::super::experiment::Repo as ExperimentRepo;
+
+type ServiceExperiment = ExperimentService::Experiment;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Document {
@@ -26,7 +29,8 @@ pub struct Document {
     pub variations: Vec<Varience>,
     pub group_assign: GroupAssignment,
 
-    pub owner: Option<User>,
+    pub owner: Option<HashMap<String, serde_json::Value>>,
+    pub owner_group: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -60,9 +64,8 @@ pub struct User {
     pub alias: String,
 }
 
-impl From<ExperimentService::Experiment> for Document {
-    fn from(data: ExperimentService::Experiment) -> Self {
-        println!("{:?}", data);
+impl From<ServiceExperiment> for Document {
+    fn from(data: ServiceExperiment) -> Self {
         let _id = data.id.map(|id| oid::ObjectId::parse_str(id).unwrap());
         let active_interval = data.active_interval.map(|act| Interval(act.0, act.1));
         let variations = data
@@ -90,16 +93,13 @@ impl From<ExperimentService::Experiment> for Document {
                 strategy: data.group_assign.strategy,
                 persistent: data.group_assign.persistent,
             },
-            owner: data.owner.map(|u| User {
-                id: u.id,
-                username: u.username,
-                alias: u.alias,
-            }),
+            owner: data.owner,
+            owner_group: data.owner_group,
         }
     }
 }
 
-impl From<Document> for ExperimentService::Experiment {
+impl From<Document> for ServiceExperiment {
     fn from(val: Document) -> Self {
         let id = match val._id {
             Some(oid) => Some(oid.to_string()),
@@ -123,7 +123,7 @@ impl From<Document> for ExperimentService::Experiment {
             })
             .collect();
 
-        ExperimentService::Experiment {
+        ServiceExperiment {
             id,
             title: val.title.clone(),
             description: val.description.clone(),
@@ -136,11 +136,8 @@ impl From<Document> for ExperimentService::Experiment {
                 strategy: val.group_assign.strategy.clone(),
                 persistent: val.group_assign.persistent.clone(),
             },
-            owner: val.owner.map(|u| ExperimentService::User {
-                id: u.id,
-                username: u.username,
-                alias: u.alias,
-            }),
+            owner: val.owner,
+            owner_group: val.owner_group,
         }
     }
 }
@@ -159,30 +156,10 @@ impl ExperimentMongoRepo {
 
 #[async_trait]
 impl ExperimentRepo for ExperimentMongoRepo {
-    /// get method is for retrieving a specific document from mongodb.
-    async fn get(&self, id: &str) -> Result<ExperimentService::Experiment, Box<dyn Error>> {
-        let object_id = oid::ObjectId::parse_str(id)
-            .map_err(|err| std::io::Error::new(std::io::ErrorKind::NotFound, err.to_string()))?;
-        let doc = self.coll.find_one(doc! { "_id": object_id }, None).await?;
-        println!("{:?}", doc);
-
-        match doc {
-            Some(doc) => Ok(ExperimentService::Experiment::from(doc)),
-            None => Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "document not found",
-            ))),
-        }
-    }
-
     /// save method is for save the given document to mongo db.
-    async fn save(
-        &self,
-        data: ExperimentService::Experiment,
-    ) -> Result<ExperimentService::Experiment, Box<dyn Error>> {
+    async fn save(&self, data: &mut ServiceExperiment) -> Result<String, Box<dyn Error>> {
         let now = Utc::now();
-        let mut r = data.clone();
-        let mut document = Document::from(data);
+        let mut document = Document::from(data.clone());
 
         // update the document timestamp
         document.updated_at = Some(now);
@@ -190,23 +167,59 @@ impl ExperimentRepo for ExperimentMongoRepo {
             document.created_at = Some(now);
         }
 
+        // generate new document id
         if let None = document._id {
             document._id = Some(oid::ObjectId::new());
         }
 
         let insert_result = self.coll.insert_one(document, None).await?;
-        println!(
-            "insert_result.inserted_id == {:?}",
-            insert_result.inserted_id
-        );
 
         if let Bson::ObjectId(ref id) = insert_result.inserted_id {
-            r.id = Some(id.to_hex());
+            data.id = Some(id.to_hex());
         } else {
-            r.id = None;
+            data.id = None;
         }
 
-        Ok(r)
+        Ok(data.id.clone().unwrap_or_default())
+    }
+
+    /// get method is for retrieving a specific document from mongodb.
+    async fn get(&self, id: &str) -> Result<ServiceExperiment, Box<dyn Error>> {
+        let object_id = oid::ObjectId::parse_str(id)
+            .map_err(|err| std::io::Error::new(std::io::ErrorKind::NotFound, err.to_string()))?;
+        let doc = self.coll.find_one(doc! { "_id": object_id }, None).await?;
+
+        match doc {
+            Some(doc) => Ok(ServiceExperiment::from(doc)),
+            None => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "document not found",
+            ))),
+        }
+    }
+
+    async fn get_by_group_id(
+        &self,
+        group_id: &str,
+        offset: usize,
+        limit: usize,
+    ) -> Result<Vec<ServiceExperiment>, Box<dyn Error>> {
+        let options = FindOptions::builder()
+            .limit(Some(limit as i64))
+            .skip(Some(offset as u64))
+            .build();
+
+        let mut cur = self
+            .coll
+            .find(doc! { "group_id": group_id }, options)
+            .await?;
+
+        let mut result: Vec<ServiceExperiment> = vec![];
+        while let Some(doc) = cur.try_next().await? {
+            result.push(ServiceExperiment::from(doc))
+        }
+
+        Ok(result)
     }
 }
 

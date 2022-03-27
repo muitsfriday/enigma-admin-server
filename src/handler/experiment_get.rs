@@ -1,10 +1,10 @@
 use std::io::Error as ioError;
 
-use crate::service::repo;
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
 use super::*;
+use crate::service::experiment::Repo as ExperimentRepo;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ResponsePayload {
@@ -17,7 +17,7 @@ pub struct ErrorPayload<'a> {
 }
 
 /// Handle method for create the experiment.
-pub async fn handle<T: repo::ExperimentRepo>(
+pub async fn handle<T: ExperimentRepo>(
     repo: web::Data<T>,
     path: web::Path<String>,
 ) -> impl Responder {

@@ -1,4 +1,4 @@
-FROM rustlang/rust:nightly
+FROM rust:latest
 
 RUN mkdir -p /usr/src/enigma-server
 WORKDIR /usr/src/enigma-server
