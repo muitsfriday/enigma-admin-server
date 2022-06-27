@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use bson::Bson;
 use chrono::{serde::ts_milliseconds_option, DateTime, Utc};
+use futures_util::{TryFutureExt, TryStreamExt};
 use mongodb::{bson::doc, bson::oid, Collection};
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -88,6 +89,51 @@ impl From<service::Variance> for Variance {
     }
 }
 
+impl Into<service::Experiment> for Document {
+    fn into(self) -> service::Experiment {
+        service::Experiment {
+            id: self._id.map(|id| id.to_string()),
+            name: self.name,
+            description: self.description,
+            active_interval: self.active_interval.map(|d| d.into()),
+            variations: self.variations.into_iter().map(|d| d.into()).collect(),
+            classing: self.classing.into(),
+            owner: self.owner,
+            channel_id: self.channel_id,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            deleted_at: self.deleted_at,
+        }
+    }
+}
+
+impl Into<service::Interval> for Interval {
+    fn into(self) -> service::Interval {
+        service::Interval(self.0, self.1)
+    }
+}
+
+impl Into<service::Variance> for Variance {
+    fn into(self) -> service::Variance {
+        service::Variance {
+            group_name: self.group_name,
+            description: self.description,
+            indicator: self.indicator,
+            weight: self.weight,
+            values: self.values,
+        }
+    }
+}
+
+impl Into<service::Classing> for Classing {
+    fn into(self) -> service::Classing {
+        service::Classing {
+            strategy: self.strategy,
+            persistent_mode: self.persistent_mode,
+        }
+    }
+}
+
 pub struct Repo {
     coll: Collection<Document>,
 }
@@ -102,28 +148,52 @@ impl Repo {
 impl service::Store for Repo {
     async fn save(&self, data: &mut service::Experiment) -> Result<String> {
         let now = Utc::now();
-        let mut document = Document::from(data.clone());
-
-        document.updated_at = Some(now);
-        if let None = document.created_at {
-            document.created_at = Some(now);
+        data.updated_at = Some(now);
+        if let None = data.created_at {
+            data.created_at = Some(now);
         }
 
+        let mut document = Document::from(data.clone());
         if let None = document._id {
             document._id = Some(oid::ObjectId::new());
         }
 
-        println!("repo insert: {:?}", document);
-        let insert_result = self.coll.insert_one(document, None).await?;
-
-        println!("repo insert_result");
+        let result = self.coll.insert_one(document, None).await;
+        let insert_result = result.map_err(|e| service::StoreError::InternalError {
+            message: e.to_string(),
+        })?;
 
         if let Bson::ObjectId(ref id) = insert_result.inserted_id {
             data.id = Some(id.to_hex());
         } else {
-            data.id = None;
+            return Err(service::StoreError::InternalError {
+                message: "undefined inserted id".to_string(),
+            }
+            .into());
         }
 
         Ok(data.id.clone().unwrap_or_default())
+    }
+
+    async fn list(&self, channel_id: &str) -> Result<Vec<service::Experiment>> {
+        let result = self.coll.find(doc! {"channel_id": channel_id}, None).await;
+
+        let cursor = result.map_err(|e| -> service::StoreError {
+            service::StoreError::InternalError {
+                message: e.to_string(),
+            }
+        })?;
+
+        let docs: Vec<service::Experiment> = cursor
+            .map_ok(|d| d.into())
+            .try_collect()
+            .map_err(|e| -> service::StoreError {
+                service::StoreError::InternalError {
+                    message: e.to_string(),
+                }
+            })
+            .await?;
+
+        Ok(docs)
     }
 }

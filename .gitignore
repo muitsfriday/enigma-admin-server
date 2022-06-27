@@ -1,2 +1,4 @@
 /target
 /jwt_token_signer/node_modules
+.vscode
+.idea

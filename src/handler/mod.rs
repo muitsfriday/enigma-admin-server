@@ -13,6 +13,7 @@ use thiserror::Error;
 use crate::service::experiment;
 
 pub mod experiment_create;
+pub mod experiment_list;
 
 /// Handler error response.
 #[derive(Debug, Serialize, Deserialize)]

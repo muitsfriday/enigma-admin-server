@@ -1,5 +1,5 @@
 @hostname = localhost:8000
-@jwt_token = eyJhbGciOiJIUzI1NiJ9.ewogICAgInN1YiI6ICIxMjM0NTY3ODkwIiwKICAgICJuYW1lIjogImFkbWluMDEiLAogICAgImlhdCI6IDE1MTYyMzkwMjIsCiAgICAiZXhwIjogMTAwMDAwMDAwMDAwMCwKICAgICJ1c2VyIjogewogICAgICAgICJpZCI6ICJ1c2VyXzAxIiwKICAgICAgICAidXNlcm5hbWUiOiAidGVzdGFkbWluIiwKICAgICAgICAiYWxpYXMiOiAidGVzdCBhZG1pbiIsCiAgICAgICAgImVtYWlsIjogInRlc3RAZXhhbXBsZS5jb20iCiAgICB9Cn0.oZkTILfVoD8WkS7aR4i-zfLAfPQ_stEEYlxV8lHSO4Y
+@jwt_token = eyJhbGciOiJIUzI1NiJ9.ewogICAgInN1YiI6ICIxMjM0NTY3ODkwIiwKICAgICJuYW1lIjogImFkbWluMDEiLAogICAgImlhdCI6IDE1MTYyMzkwMjIsCiAgICAiZXhwIjogMTAwMDAwMDAwMDAwMCwKICAgICJ1c2VyIjogewogICAgICAgICJpZCI6ICJ1c2VyXzAxIiwKICAgICAgICAidXNlcm5hbWUiOiAidGVzdGFkbWluIiwKICAgICAgICAiYWxpYXMiOiAidGVzdCBhZG1pbiIsCiAgICAgICAgImVtYWlsIjogInRlc3RAZXhhbXBsZS5jb20iLAogICAgICAgICJjaGFubmVsX2lkIjogIjEwMDAwMDAxIgogICAgfQp9.uX0shLY0SmaEv_PBuLkTo6Aw2tK4N29Vq7fmzlPPju0
 ###
 
 GET http://{{hostname}}/hey
@@ -11,8 +11,8 @@ Content-Type: application/json
 Authorization: bearer {{jwt_token}}
 
 {
-    "name": "Hello world 1",
-    "description": "Mu test experiment",
+    "name": "Hello world 2",
+    "description": "Mu test experiment v2",
     "active_interval": ["2007-04-05T14:30:30Z", "2007-04-05T14:30:30Z"],
     "variances": [
         { 
@@ -54,6 +54,6 @@ Authorization: bearer {{jwt_token}}
 
 ###
 
-GET http://{{hostname}}/experiment
+GET http://{{hostname}}/experiments
 Content-Type: application/json
 Authorization: bearer {{jwt_token}}

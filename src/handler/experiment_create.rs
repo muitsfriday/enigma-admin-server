@@ -100,7 +100,13 @@ pub async fn handle<ER: experiment::Store>(
     let experiment_repo = &dep.experiment_repo;
 
     if let Some(ut) = req.extensions().get::<HashMap<String, serde_json::Value>>() {
-        data.owner = ut.get("user").map(|v| v.clone());
+        let user = ut.get("user");
+        data.owner = user.map(|d| d.clone());
+        data.channel_id = user
+            .and_then(|d| d.get("channel_id"))
+            .and_then(|d| d.as_str())
+            .ok_or::<CustomAPIError>(HandlerError::Unauthorize.into())?
+            .to_owned();
     } else {
         return Err(HandlerError::Unauthorize.into());
     }

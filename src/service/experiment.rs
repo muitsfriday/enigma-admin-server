@@ -30,7 +30,9 @@ pub struct Experiment {
 
     #[serde(with = "ts_milliseconds_option")]
     pub created_at: Option<DateTime<Utc>>,
+    #[serde(with = "ts_milliseconds_option")]
     pub updated_at: Option<DateTime<Utc>>,
+    #[serde(with = "ts_milliseconds_option")]
     pub deleted_at: Option<DateTime<Utc>>,
 }
 
@@ -74,13 +76,33 @@ impl UserError {
     }
 }
 
+#[derive(Debug, Display, Error)]
+pub enum StoreError {
+    #[display(fmt = "{}", message)]
+    InternalError {
+        message: String,
+    },
+    DocumentNotfound,
+}
+
+impl StoreError {
+    pub fn code(&self) -> String {
+        match self {
+            StoreError::InternalError { message: _ } => "internal_error".to_owned(),
+            StoreError::DocumentNotfound => "document_notfound".to_owned(),
+        }
+    }
+}
+
 ///
 /// Defined the service contract that abstract away the implementation details.
+///
 ///
 
 #[async_trait]
 pub trait Store {
     async fn save(&self, data: &mut Experiment) -> Result<String>;
+    async fn list(&self, channel_id: &str) -> Result<Vec<Experiment>>;
 }
 
 ///
@@ -97,9 +119,22 @@ pub async fn create(repo: &impl Store, data: Experiment) -> Result<Experiment> {
         .into());
     }
 
-    let inserted_id = repo.save(&mut data).await?;
+    match repo.save(&mut data).await {
+        Ok(inserted_id) => {
+            data.id = Some(inserted_id);
 
-    data.id = Some(inserted_id);
+            Ok(data)
+        }
+        Err(err) => match err.downcast_ref::<StoreError>() {
+            Some(_) => todo!(),
+            None => todo!(),
+        },
+    }
+}
 
-    Ok(data)
+pub async fn list(repo: &impl Store, channel_id: &str) -> Result<Vec<Experiment>> {
+    match repo.list(channel_id).await {
+        Ok(experiments) => Ok(experiments),
+        Err(err) => Err(err),
+    }
 }

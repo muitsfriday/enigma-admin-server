@@ -7,6 +7,7 @@
         "id": "user_01",
         "username": "testadmin",
         "alias": "test admin",
-        "email": "test@example.com"
+        "email": "test@example.com",
+        "channel_id": "10000001"
     }
 }

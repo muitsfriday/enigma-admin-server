@@ -30,13 +30,21 @@ where
     let dependency = web::Data::new(dep);
 
     HttpServer::new(move || {
-        App::new().service(
-            web::resource("/experiment")
-                .app_data(web::JsonConfig::default().error_handler(handler::handle_json_error))
-                .app_data(dependency.clone())
-                .wrap(JwtExtractor::new(conf.jwt_secret.clone()))
-                .route(web::post().to(handler::experiment_create::handle::<ExpStore>)),
-        )
+        App::new()
+            .service(
+                web::resource("/experiment")
+                    .app_data(web::JsonConfig::default().error_handler(handler::handle_json_error))
+                    .app_data(dependency.clone())
+                    .wrap(JwtExtractor::new(conf.jwt_secret.clone()))
+                    .route(web::post().to(handler::experiment_create::handle::<ExpStore>)),
+            )
+            .service(
+                web::resource("/experiments")
+                    .app_data(web::JsonConfig::default().error_handler(handler::handle_json_error))
+                    .app_data(dependency.clone())
+                    .wrap(JwtExtractor::new(conf.jwt_secret.clone()))
+                    .route(web::get().to(handler::experiment_list::handle::<ExpStore>)),
+            )
     })
     .bind(("0.0.0.0", port))?
     .run()
