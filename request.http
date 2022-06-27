@@ -1,10 +1,14 @@
-GET http://localhost:8000/hey
+@hostname = localhost:8000
+@jwt_token = eyJhbGciOiJIUzI1NiJ9.ewogICAgInN1YiI6ICIxMjM0NTY3ODkwIiwKICAgICJuYW1lIjogImFkbWluMDEiLAogICAgImlhdCI6IDE1MTYyMzkwMjIsCiAgICAiZXhwIjogMTAwMDAwMDAwMDAwMCwKICAgICJ1c2VyIjogewogICAgICAgICJpZCI6ICJ1c2VyXzAxIiwKICAgICAgICAidXNlcm5hbWUiOiAidGVzdGFkbWluIiwKICAgICAgICAiYWxpYXMiOiAidGVzdCBhZG1pbiIsCiAgICAgICAgImVtYWlsIjogInRlc3RAZXhhbXBsZS5jb20iCiAgICB9Cn0.oZkTILfVoD8WkS7aR4i-zfLAfPQ_stEEYlxV8lHSO4Y
+###
+
+GET http://{{hostname}}/hey
 
 ###
 
-POST http://localhost:8000/experiment
+POST http://{{hostname}}/experiment
 Content-Type: application/json
-Authorization: bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6ImFkbWluMDEiLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTAwMDAwMDAwMDAwMCwidXNlciI6eyJpZCI6InVzZXJfMDEiLCJ1c2VybmFtZSI6InRlc3RhZG1pbiIsImFsaWFzIjoidGVzdCBhZG1pbiIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSJ9fQ.4WBXSKQvu9nKzexVVpxxMX2-_Z96WdcOSqFX31uizQk
+Authorization: bearer {{jwt_token}}
 
 {
     "name": "Hello world 1",
@@ -50,6 +54,6 @@ Authorization: bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6I
 
 ###
 
-GET http://localhost:8000/experiment
+GET http://{{hostname}}/experiment
 Content-Type: application/json
-Authorization: bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6ImFkbWluMDEiLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTAwMDAwMDAwMDAwMCwidXNlciI6eyJpZCI6InVzZXJfMDEiLCJ1c2VybmFtZSI6InRlc3RhZG1pbiIsImFsaWFzIjoidGVzdCBhZG1pbiIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSJ9fQ.4WBXSKQvu9nKzexVVpxxMX2-_Z96WdcOSqFX31uizQk
+Authorization: bearer {{jwt_token}}

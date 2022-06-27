@@ -1,0 +1,12 @@
+{
+    "sub": "1234567890",
+    "name": "admin01",
+    "iat": 1516239022,
+    "exp": 1000000000000,
+    "user": {
+        "id": "user_01",
+        "username": "testadmin",
+        "alias": "test admin",
+        "email": "test@example.com"
+    }
+}
