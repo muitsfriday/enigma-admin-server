@@ -26,9 +26,11 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     volumes:
-      - /data/mongo:/data/db
+      - /tmp/mongo:/data/db
     logging:
       driver: none
+
+
 
   # mongo-express:
   #   image: mongo-express:0.54.0
