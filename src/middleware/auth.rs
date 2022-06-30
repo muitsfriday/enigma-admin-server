@@ -8,68 +8,73 @@ use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpMessage,
 };
+use anyhow::Result;
+use dyn_clone::DynClone;
 use futures_util::future::LocalBoxFuture;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    user: User,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct User {
-    id: String,
-    username: String,
+pub trait ClaimExtractable: DynClone {
+    fn extract(&self, v: HashMap<String, serde_json::Value>) -> Result<Box<Self>>;
 }
 
 // There are two steps in middleware processing.
 // 1. Middleware initialization, middleware factory gets called with
 //    next service in chain as parameter.
 // 2. Middleware's call method gets called with normal request.
-pub struct JwtExtractor {
+pub struct JwtExtractor<T: ClaimExtractable + Clone> {
     jwt_secret: String,
+    claims: T,
 }
 
-impl JwtExtractor {
-    pub fn new(jwt_secret: String) -> Self {
-        Self { jwt_secret }
+impl<T> JwtExtractor<T>
+where
+    T: ClaimExtractable + Clone,
+{
+    pub fn new(jwt_secret: String, c: T) -> Self {
+        Self {
+            jwt_secret,
+            claims: c,
+        }
     }
 }
 
 // Middleware factory is `Transform` trait
 // `S` - type of the next service
 // `B` - type of response's body
-impl<S, B> Transform<S, ServiceRequest> for JwtExtractor
+impl<S, B, T> Transform<S, ServiceRequest> for JwtExtractor<T>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
     B: 'static,
+    T: ClaimExtractable + Clone + 'static,
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
     type InitError = ();
-    type Transform = JWTExtractorMiddleware<S>;
+    type Transform = JWTExtractorMiddleware<S, T>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
         ready(Ok(JWTExtractorMiddleware {
             service,
             jwt_secret: self.jwt_secret.clone(),
+            claims: self.claims.clone(),
         }))
     }
 }
 
-pub struct JWTExtractorMiddleware<S> {
+pub struct JWTExtractorMiddleware<S, T: ClaimExtractable> {
     jwt_secret: String,
     service: S,
+    claims: T,
 }
 
-impl<S, B> Service<ServiceRequest> for JWTExtractorMiddleware<S>
+impl<S, B, T> Service<ServiceRequest> for JWTExtractorMiddleware<S, T>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
     S::Future: 'static,
     B: 'static,
+    T: ClaimExtractable + 'static,
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
@@ -91,8 +96,11 @@ where
                     );
 
                     if let Ok(token_data) = header_data {
-                        req.extensions_mut().insert(token_data.claims);
-                        is_auth_pass = true;
+                        let claims = self.claims.extract(token_data.claims);
+                        if let Ok(result) = claims {
+                            req.extensions_mut().insert(*result);
+                            is_auth_pass = true;
+                        }
                     }
                 }
             }

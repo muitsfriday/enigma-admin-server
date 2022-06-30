@@ -5,15 +5,42 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
     HttpRequest, HttpResponse, ResponseError,
 };
+use anyhow::anyhow;
 use anyhow::Error as AnyhowError;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::middleware::auth;
 use crate::service::experiment;
 
 pub mod experiment_create;
 pub mod experiment_list;
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+pub struct Claims {
+    id: String,
+    username: String,
+    channel_id: String,
+    email: String,
+    alias: String,
+}
+
+impl auth::ClaimExtractable for Claims {
+    fn extract(
+        &self,
+        v: std::collections::HashMap<String, serde_json::Value>,
+    ) -> anyhow::Result<Box<Self>> {
+        let seq = v
+            .get("user")
+            .and_then(|v| v.serialize(serde_json::value::Serializer).ok())
+            .ok_or(anyhow!("error"))?;
+
+        Claims::deserialize(seq)
+            .map(|v| Box::new(v))
+            .map_err(|e| anyhow!(e.to_string()))
+    }
+}
 
 /// Handler error response.
 #[derive(Debug, Serialize, Deserialize)]

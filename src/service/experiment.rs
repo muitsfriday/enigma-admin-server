@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use chrono::{serde::ts_milliseconds_option, DateTime, Utc};
 use derive_more::{Display, Error};
+use mockall::automock;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use validator::Validate;
@@ -12,7 +13,7 @@ use validator::Validate;
 /// Defined struct represents the experiment data uses in the service.
 ///
 
-#[derive(Debug, Validate, Serialize, Deserialize, Clone)]
+#[derive(Debug, Default, Validate, Serialize, Deserialize, Clone)]
 pub struct Experiment {
     pub id: Option<String>,
     #[validate(length(min = 4, max = 100, message = "must have length between 4 - 100"))]
@@ -52,7 +53,7 @@ pub struct Variance {
     pub values: HashMap<String, serde_json::Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Classing {
     pub strategy: String,
     pub persistent_mode: String,
@@ -99,6 +100,7 @@ impl StoreError {
 ///
 ///
 
+#[automock]
 #[async_trait]
 pub trait Store {
     async fn save(&self, data: &mut Experiment) -> Result<String>;

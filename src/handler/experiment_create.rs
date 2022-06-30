@@ -5,12 +5,12 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-use super::{CustomAPIError, HandlerError};
+use super::{Claims, CustomAPIError, HandlerError};
 use crate::service::experiment;
 use crate::Dependency;
 
 /// Exeriment create handler's request payload struct
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 pub struct RequestPayload {
     pub name: String,
     pub description: String,
@@ -32,7 +32,7 @@ pub struct Variance {
     pub values: HashMap<String, serde_json::Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Classing {
     pub strategy: String,
     pub persistent_mode: String,
@@ -99,14 +99,10 @@ pub async fn handle<ER: experiment::Store>(
     let mut data: experiment::Experiment = payload.into_inner().into();
     let experiment_repo = &dep.experiment_repo;
 
-    if let Some(ut) = req.extensions().get::<HashMap<String, serde_json::Value>>() {
-        let user = ut.get("user");
-        data.owner = user.map(|d| d.clone());
-        data.channel_id = user
-            .and_then(|d| d.get("channel_id"))
-            .and_then(|d| d.as_str())
-            .ok_or::<CustomAPIError>(HandlerError::Unauthorize.into())?
-            .to_owned();
+    if let Some(ut) = req.extensions().get::<Claims>() {
+        let u = serde_json::to_value(ut).unwrap_or_default();
+        data.owner = Some(u);
+        data.channel_id = ut.channel_id.clone();
     } else {
         return Err(HandlerError::Unauthorize.into());
     }
@@ -116,5 +112,50 @@ pub async fn handle<ER: experiment::Store>(
     match create_result {
         Ok(data) => Ok(Json(ResponsePayload { data })),
         Err(e) => Err(e.into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::service::experiment as experiment_service;
+    use crate::Dependency;
+    use anyhow::Ok;
+
+    use actix_web::{http::header::ContentType, test};
+
+    #[actix_web::test]
+    async fn test_index_ok() {
+        let mut mock_store = experiment_service::MockStore::new();
+        let mock_create_result = Ok(String::from("mock"));
+        mock_store
+            .expect_save()
+            .return_once(move |_| mock_create_result);
+
+        let data = web::Data::new(Dependency {
+            experiment_repo: mock_store,
+        });
+
+        let local_datetime = Utc::now();
+        let body = Json(RequestPayload {
+            name: "mock-name".to_string(),
+            description: "mock-description".to_string(),
+            active_interval: Some(Interval(Some(local_datetime), Some(local_datetime))),
+            variances: vec![],
+            classing: Classing {
+                strategy: "mock-value".to_string(),
+                persistent_mode: "mock-value".to_string(),
+            },
+        });
+
+        let mock_claims = Claims::default();
+
+        let req = test::TestRequest::default()
+            .insert_header(ContentType::json())
+            .to_http_request();
+        req.extensions_mut().insert(mock_claims);
+
+        let resp = handle(req, body, data).await;
+        assert_eq!(resp.is_ok(), true);
     }
 }

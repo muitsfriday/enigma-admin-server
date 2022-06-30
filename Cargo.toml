@@ -19,3 +19,5 @@ futures-util = "0.3"
 jsonwebtoken = "8.1.1"
 mongodb = "2.2.2"
 validator = { version = "0.15", features = ["derive"] }
+mockall = "0.11.1"
+dyn-clone = "1.0.6"
