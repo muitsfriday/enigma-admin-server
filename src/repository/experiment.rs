@@ -165,6 +165,11 @@ impl service::Store for Repo {
 
         if let Bson::ObjectId(ref id) = insert_result.inserted_id {
             data.id = Some(id.to_hex());
+            let dd = oid::ObjectId::parse_str(id.to_hex());
+            match dd {
+                Ok(o) => println!("created: {}", o),
+                Err(e) => println!("error: {}", e.to_string()),
+            }
         } else {
             return Err(service::StoreError::InternalError {
                 message: "undefined inserted id".to_string(),
@@ -195,5 +200,32 @@ impl service::Store for Repo {
             .await?;
 
         Ok(docs)
+    }
+
+    async fn get(&self, id: &str, channel_id: &str) -> Result<service::Experiment> {
+        let id = oid::ObjectId::parse_str(id).map_err(|e| service::StoreError::InvalidInput {
+            message: format!(
+                "{} id({}) {}",
+                "invalid id pattern".to_string(),
+                id,
+                &e.to_string()
+            ),
+        })?;
+
+        let result = self.coll.find_one(doc! {"_id": id }, None).await;
+
+        let doc = result
+            .map_err(|e| -> service::StoreError {
+                service::StoreError::InternalError {
+                    message: e.to_string(),
+                }
+            })?
+            .ok_or(service::StoreError::DocumentNotfound)?;
+
+        if doc.channel_id != channel_id {
+            return Err(service::StoreError::UnauthorizedAccess.into());
+        }
+
+        Ok(doc.into())
     }
 }

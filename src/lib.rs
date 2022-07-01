@@ -32,9 +32,9 @@ where
 
     HttpServer::new(move || {
         App::new()
+            .app_data(web::JsonConfig::default().error_handler(handler::handle_json_error))
             .service(
                 web::resource("/experiment")
-                    .app_data(web::JsonConfig::default().error_handler(handler::handle_json_error))
                     .app_data(dependency.clone())
                     .wrap(auth_middleware::JwtExtractor::new(
                         conf.jwt_secret.clone(),
@@ -43,8 +43,16 @@ where
                     .route(web::post().to(handler::experiment_create::handle::<ExpStore>)),
             )
             .service(
+                web::resource("/experiment/{id}")
+                    .app_data(dependency.clone())
+                    .wrap(auth_middleware::JwtExtractor::new(
+                        conf.jwt_secret.clone(),
+                        Claims::default(),
+                    ))
+                    .route(web::get().to(handler::experiment_get::handle::<ExpStore>)),
+            )
+            .service(
                 web::resource("/experiments")
-                    .app_data(web::JsonConfig::default().error_handler(handler::handle_json_error))
                     .app_data(dependency.clone())
                     .wrap(auth_middleware::JwtExtractor::new(
                         conf.jwt_secret.clone(),

@@ -84,6 +84,10 @@ pub enum StoreError {
         message: String,
     },
     DocumentNotfound,
+    UnauthorizedAccess,
+    InvalidInput {
+        message: String,
+    },
 }
 
 impl StoreError {
@@ -91,6 +95,8 @@ impl StoreError {
         match self {
             StoreError::InternalError { message: _ } => "internal_error".to_owned(),
             StoreError::DocumentNotfound => "document_notfound".to_owned(),
+            StoreError::UnauthorizedAccess => "unauthorized_access".to_owned(),
+            StoreError::InvalidInput { message: _ } => "invalid_input".to_owned(),
         }
     }
 }
@@ -105,6 +111,7 @@ impl StoreError {
 pub trait Store {
     async fn save(&self, data: &mut Experiment) -> Result<String>;
     async fn list(&self, channel_id: &str) -> Result<Vec<Experiment>>;
+    async fn get(&self, id: &str, channel_id: &str) -> Result<Experiment>;
 }
 
 ///
@@ -137,6 +144,13 @@ pub async fn create(repo: &impl Store, data: Experiment) -> Result<Experiment> {
 pub async fn list(repo: &impl Store, channel_id: &str) -> Result<Vec<Experiment>> {
     match repo.list(channel_id).await {
         Ok(experiments) => Ok(experiments),
+        Err(err) => Err(err),
+    }
+}
+
+pub async fn get(repo: &impl Store, id: &str, channel_id: &str) -> Result<Experiment> {
+    match repo.get(id, channel_id).await {
+        Ok(experiment) => Ok(experiment),
         Err(err) => Err(err),
     }
 }

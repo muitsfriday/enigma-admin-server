@@ -15,6 +15,7 @@ use crate::middleware::auth;
 use crate::service::experiment;
 
 pub mod experiment_create;
+pub mod experiment_get;
 pub mod experiment_list;
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]

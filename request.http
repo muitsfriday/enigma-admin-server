@@ -57,3 +57,9 @@ Authorization: bearer {{jwt_token}}
 GET http://{{hostname}}/experiments
 Content-Type: application/json
 Authorization: bearer {{jwt_token}}
+
+###
+
+GET http://{{hostname}}/experiment/62bf0ef51ff25598aafa3e66
+Content-Type: application/json
+Authorization: bearer {{jwt_token}}
