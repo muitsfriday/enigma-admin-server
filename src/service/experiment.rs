@@ -112,6 +112,7 @@ pub trait Store {
     async fn save(&self, data: &mut Experiment) -> Result<String>;
     async fn list(&self, channel_id: &str) -> Result<Vec<Experiment>>;
     async fn get(&self, id: &str, channel_id: &str) -> Result<Experiment>;
+    async fn delete(&self, id: &str, channel_id: &str) -> Result<()>;
 }
 
 ///
@@ -153,4 +154,8 @@ pub async fn get(repo: &impl Store, id: &str, channel_id: &str) -> Result<Experi
         Ok(experiment) => Ok(experiment),
         Err(err) => Err(err),
     }
+}
+
+pub async fn delete(repo: &impl Store, id: &str, channel_id: &str) -> Result<()> {
+    repo.delete(id, channel_id).await
 }
