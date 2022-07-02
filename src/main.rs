@@ -52,7 +52,5 @@ async fn init_mongo_coll<T>(url: &str, dbname: &str, collection: &str) -> Result
 fn init_experiment_repository(
     coll: Collection<experiment_repo::Document>,
 ) -> impl experiment_service::Store {
-    
-
     experiment_repo::Repo::new(coll)
 }
