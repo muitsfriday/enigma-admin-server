@@ -39,15 +39,17 @@ pub struct Classing {
 }
 
 /// Implement to make the request payload can transform into the service's struct
-impl Into<experiment::Experiment> for RequestPayload {
-    fn into(self) -> experiment::Experiment {
-        experiment::Experiment {
+///
+
+impl From<RequestPayload> for experiment::Experiment {
+    fn from(rp: RequestPayload) -> Self {
+        Self {
             id: None,
-            name: self.name,
-            description: self.description,
-            active_interval: self.active_interval.map(|i| i.into()),
-            variations: self.variances.into_iter().map(|v| v.into()).collect(),
-            classing: self.classing.into(),
+            name: rp.name,
+            description: rp.description,
+            active_interval: rp.active_interval.map(|v| v.into()),
+            variations: rp.variances.into_iter().map(|v| v.into()).collect(),
+            classing: rp.classing.into(),
             owner: None,
             channel_id: String::default(),
             created_at: None,
@@ -57,29 +59,29 @@ impl Into<experiment::Experiment> for RequestPayload {
     }
 }
 
-impl Into<experiment::Interval> for Interval {
-    fn into(self) -> experiment::Interval {
-        experiment::Interval(self.0, self.1)
+impl From<Interval> for experiment::Interval {
+    fn from(i: Interval) -> Self {
+        Self(i.0, i.1)
     }
 }
 
-impl Into<experiment::Classing> for Classing {
-    fn into(self) -> experiment::Classing {
-        experiment::Classing {
-            strategy: self.strategy,
-            persistent_mode: self.persistent_mode,
+impl From<Classing> for experiment::Classing {
+    fn from(c: Classing) -> Self {
+        Self {
+            strategy: c.strategy,
+            persistent_mode: c.persistent_mode,
         }
     }
 }
 
-impl Into<experiment::Variance> for Variance {
-    fn into(self) -> experiment::Variance {
-        experiment::Variance {
-            group_name: self.group_name,
-            description: self.description,
-            indicator: self.indicator,
-            weight: self.weight,
-            values: self.values,
+impl From<Variance> for experiment::Variance {
+    fn from(v: Variance) -> Self {
+        Self {
+            group_name: v.group_name,
+            description: v.description,
+            indicator: v.indicator,
+            weight: v.weight,
+            values: v.values,
         }
     }
 }
@@ -156,6 +158,6 @@ mod tests {
         req.extensions_mut().insert(mock_claims);
 
         let resp = handle(req, body, data).await;
-        assert_eq!(resp.is_ok(), true);
+        assert!(resp.is_ok());
     }
 }
