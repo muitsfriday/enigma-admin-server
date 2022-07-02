@@ -92,7 +92,7 @@ impl From<service::Variance> for Variance {
 impl From<Document> for service::Experiment {
     fn from(doc: Document) -> Self {
         service::Experiment {
-            id: doc.id,
+            id: doc._id.map(|v| v.to_hex()),
             name: doc.name,
             description: doc.description,
             active_interval: doc.active_interval.map(|v| v.into()),
@@ -222,5 +222,30 @@ impl service::Store for Repo {
         }
 
         Ok(doc.into())
+    }
+
+    async fn delete(&self, id: &str, channel_id: &str) -> Result<()> {
+        let id = oid::ObjectId::parse_str(id).map_err(|e| service::StoreError::InvalidInput {
+            message: format!("{} id({}) {}", "invalid id pattern", id, &e.to_string()),
+        })?;
+
+        let result = self
+            .coll
+            .delete_one(doc! {"_id": id, "channel_id": channel_id }, None)
+            .await;
+
+        match result {
+            Ok(dr) => {
+                if dr.deleted_count > 0 {
+                    Ok(())
+                } else {
+                    Err(service::StoreError::DocumentNotfound.into())
+                }
+            }
+            Err(e) => Err(service::StoreError::InternalError {
+                message: e.to_string(),
+            }
+            .into()),
+        }
     }
 }

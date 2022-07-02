@@ -60,6 +60,13 @@ Authorization: bearer {{jwt_token}}
 
 ###
 
-GET http://{{hostname}}/experiment/62bf0ef51ff25598aafa3e66
+GET http://{{hostname}}/experiment/62bb13dfea2b3ea78771e305
+Content-Type: application/json
+Authorization: bearer {{jwt_token}}
+
+
+### 
+
+DELETE http://{{hostname}}/experiment/62bf0ef51ff25598aafa3e66
 Content-Type: application/json
 Authorization: bearer {{jwt_token}}
