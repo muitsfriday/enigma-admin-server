@@ -25,15 +25,14 @@ pub async fn handle<ER: experiment_service::Store>(
     let experiment_repo = &dep.experiment_repo;
     let params = path.into_inner();
 
-    let ext = req.extensions();
-    let channel_id: &str;
-    if let Some(ut) = ext.get::<Claims>() {
-        channel_id = &ut.channel_id;
+    let channel_id: String;
+    if let Some(ut) = req.extensions().get::<Claims>() {
+        channel_id = ut.channel_id.clone();
     } else {
         return Err(HandlerError::Unauthorize.into());
     }
 
-    let data = experiment_service::get(experiment_repo, &params.id, channel_id).await;
+    let data = experiment_service::get(experiment_repo, &params.id, &channel_id).await;
 
     match data {
         Ok(data) => Ok(Json(ResponsePayload { data })),
@@ -73,6 +72,6 @@ mod tests {
         });
 
         let resp = handle(req, params, data).await;
-        assert_eq!(resp.is_ok(), true);
+        assert!(resp.is_ok());
     }
 }

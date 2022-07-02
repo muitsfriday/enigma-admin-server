@@ -18,15 +18,14 @@ pub async fn handle<ER: experiment::Store>(
 ) -> Result<Json<ResponsePayload>, CustomAPIError> {
     let experiment_repo = &dep.experiment_repo;
 
-    let ext = req.extensions();
-    let channel_id: &str;
-    if let Some(ut) = ext.get::<Claims>() {
-        channel_id = &ut.channel_id;
+    let channel_id: String;
+    if let Some(ut) = req.extensions().get::<Claims>() {
+        channel_id = ut.channel_id.clone();
     } else {
         return Err(HandlerError::Unauthorize.into());
     }
 
-    let data = experiment::list(experiment_repo, channel_id).await;
+    let data = experiment::list(experiment_repo, &channel_id).await;
 
     match data {
         Ok(data) => Ok(Json(ResponsePayload { data })),
