@@ -73,7 +73,7 @@ impl From<service::Experiment> for Document {
 
 impl From<service::Interval> for Interval {
     fn from(data: service::Interval) -> Self {
-        Self(data.0.clone(), data.1.clone())
+        Self(data.0, data.1)
     }
 }
 
@@ -149,12 +149,12 @@ impl service::Store for Repo {
     async fn save(&self, data: &mut service::Experiment) -> Result<String> {
         let now = Utc::now();
         data.updated_at = Some(now);
-        if let None = data.created_at {
+        if data.created_at.is_none() {
             data.created_at = Some(now);
         }
 
         let mut document = Document::from(data.clone());
-        if let None = document._id {
+        if document._id.is_none() {
             document._id = Some(oid::ObjectId::new());
         }
 
@@ -168,7 +168,7 @@ impl service::Store for Repo {
             let dd = oid::ObjectId::parse_str(id.to_hex());
             match dd {
                 Ok(o) => println!("created: {}", o),
-                Err(e) => println!("error: {}", e.to_string()),
+                Err(e) => println!("error: {}", e),
             }
         } else {
             return Err(service::StoreError::InternalError {
@@ -206,7 +206,7 @@ impl service::Store for Repo {
         let id = oid::ObjectId::parse_str(id).map_err(|e| service::StoreError::InvalidInput {
             message: format!(
                 "{} id({}) {}",
-                "invalid id pattern".to_string(),
+                "invalid id pattern",
                 id,
                 &e.to_string()
             ),

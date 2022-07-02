@@ -38,7 +38,7 @@ impl auth::ClaimExtractable for Claims {
             .ok_or(anyhow!("error"))?;
 
         Claims::deserialize(seq)
-            .map(|v| Box::new(v))
+            .map(Box::new)
             .map_err(|e| anyhow!(e.to_string()))
     }
 }

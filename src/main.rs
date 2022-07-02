@@ -46,13 +46,13 @@ async fn init_mongo_coll<T>(url: &str, dbname: &str, collection: &str) -> Result
         .await?;
     println!("Connected successfully.");
 
-    return Ok(coll);
+    Ok(coll)
 }
 
 fn init_experiment_repository(
     coll: Collection<experiment_repo::Document>,
 ) -> impl experiment_service::Store {
-    let repo = experiment_repo::Repo::new(coll);
+    
 
-    return repo;
+    experiment_repo::Repo::new(coll)
 }
