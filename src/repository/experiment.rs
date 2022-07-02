@@ -89,47 +89,47 @@ impl From<service::Variance> for Variance {
     }
 }
 
-impl Into<service::Experiment> for Document {
-    fn into(self) -> service::Experiment {
+impl From<Document> for service::Experiment {
+    fn from(doc: Document) -> Self {
         service::Experiment {
-            id: self._id.map(|id| id.to_string()),
-            name: self.name,
-            description: self.description,
-            active_interval: self.active_interval.map(|d| d.into()),
-            variations: self.variations.into_iter().map(|d| d.into()).collect(),
-            classing: self.classing.into(),
-            owner: self.owner,
-            channel_id: self.channel_id,
-            created_at: self.created_at,
-            updated_at: self.updated_at,
-            deleted_at: self.deleted_at,
+            id: doc.id,
+            name: doc.name,
+            description: doc.description,
+            active_interval: doc.active_interval.map(|v| v.into()),
+            variations: doc.variations.into_iter().map(|v| v.into()).collect(),
+            classing: doc.classing.into(),
+            owner: doc.owner,
+            channel_id: doc.channel_id,
+            created_at: doc.created_at,
+            updated_at: doc.updated_at,
+            deleted_at: doc.deleted_at,
         }
     }
 }
 
-impl Into<service::Interval> for Interval {
-    fn into(self) -> service::Interval {
-        service::Interval(self.0, self.1)
+impl From<Interval> for service::Interval {
+    fn from(i: Interval) -> Self {
+        Self(i.0, i.1)
     }
 }
 
-impl Into<service::Variance> for Variance {
-    fn into(self) -> service::Variance {
-        service::Variance {
-            group_name: self.group_name,
-            description: self.description,
-            indicator: self.indicator,
-            weight: self.weight,
-            values: self.values,
+impl From<Variance> for service::Variance {
+    fn from(v: Variance) -> Self {
+        Self {
+            group_name: v.group_name,
+            description: v.description,
+            indicator: v.indicator,
+            weight: v.weight,
+            values: v.values,
         }
     }
 }
 
-impl Into<service::Classing> for Classing {
-    fn into(self) -> service::Classing {
-        service::Classing {
-            strategy: self.strategy,
-            persistent_mode: self.persistent_mode,
+impl From<Classing> for service::Classing {
+    fn from(c: Classing) -> Self {
+        Self {
+            strategy: c.strategy,
+            persistent_mode: c.persistent_mode,
         }
     }
 }
@@ -204,12 +204,7 @@ impl service::Store for Repo {
 
     async fn get(&self, id: &str, channel_id: &str) -> Result<service::Experiment> {
         let id = oid::ObjectId::parse_str(id).map_err(|e| service::StoreError::InvalidInput {
-            message: format!(
-                "{} id({}) {}",
-                "invalid id pattern",
-                id,
-                &e.to_string()
-            ),
+            message: format!("{} id({}) {}", "invalid id pattern", id, &e.to_string()),
         })?;
 
         let result = self.coll.find_one(doc! {"_id": id }, None).await;

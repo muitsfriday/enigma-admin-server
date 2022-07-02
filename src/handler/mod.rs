@@ -35,7 +35,7 @@ impl auth::ClaimExtractable for Claims {
         let seq = v
             .get("user")
             .and_then(|v| v.serialize(serde_json::value::Serializer).ok())
-            .ok_or(anyhow!("error"))?;
+            .ok_or_else(|| anyhow!("error"))?;
 
         Claims::deserialize(seq)
             .map(Box::new)

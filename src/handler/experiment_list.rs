@@ -62,6 +62,6 @@ mod tests {
         req.extensions_mut().insert(mock_claims);
 
         let resp = handle(req, data).await;
-        assert_eq!(resp.is_ok(), true);
+        assert!(resp.is_ok());
     }
 }
