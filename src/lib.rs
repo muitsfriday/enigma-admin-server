@@ -49,7 +49,8 @@ where
                         conf.jwt_secret.clone(),
                         Claims::default(),
                     ))
-                    .route(web::get().to(handler::experiment_get::handle::<ExpStore>)),
+                    .route(web::get().to(handler::experiment_get::handle::<ExpStore>))
+                    .route(web::delete().to(handler::experiment_delete::handle::<ExpStore>)),
             )
             .service(
                 web::resource("/experiments")
