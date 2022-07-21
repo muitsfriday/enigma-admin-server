@@ -18,6 +18,7 @@ pub mod experiment_create;
 pub mod experiment_get;
 pub mod experiment_list;
 
+/// Modify this Claims struct to match up your JWT decoded data.
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Claims {
     id: String,

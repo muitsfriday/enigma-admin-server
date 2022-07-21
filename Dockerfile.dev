@@ -4,8 +4,6 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 COPY . /usr/src/app
 
-RUN cargo build
-
-CMD ["cargo", "run"]
+RUN cargo install cargo-watch
 
 EXPOSE 8000

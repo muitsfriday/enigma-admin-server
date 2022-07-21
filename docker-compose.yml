@@ -3,7 +3,7 @@ services:
   server:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     volumes:
       - ./:/usr/src/app
       - /usr/src/app/target/
@@ -29,9 +29,6 @@ services:
       - /tmp/mongo:/data/db
     logging:
       driver: none
-
-
-
   # mongo-express:
   #   image: mongo-express:0.54.0
   #   restart: always

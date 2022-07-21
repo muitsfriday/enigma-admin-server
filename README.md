@@ -19,3 +19,8 @@ Go to folder `jwt_token_signer` and fun the following command.
 npm install
 npm run generate:token
 ```
+
+## Custom Claim
+To defined the custom claim struct for your JWT
+See `/src/handler/mod.rs` search for `Claim` struct and modify it to match up with your JWT data.
+
