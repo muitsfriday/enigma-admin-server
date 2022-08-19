@@ -1,4 +1,4 @@
-# enigma-server
+# enigma-admin-server
 API server that manage the statistical experiment data.
 
 ## Local development

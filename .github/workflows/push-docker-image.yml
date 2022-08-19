@@ -15,7 +15,7 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: enigma_server
+  IMAGE_NAME: enigma_admin_server
 
 jobs:
   # Push image to GitHub Packages.

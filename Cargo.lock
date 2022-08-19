@@ -512,7 +512,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "enigma-server"
+name = "enigma-admin-server"
 version = "0.1.0"
 dependencies = [
  "actix-web",

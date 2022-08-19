@@ -2,9 +2,9 @@ use anyhow::Result;
 use mongodb::{bson::doc, options::ClientOptions, Client, Collection};
 use std::env;
 
-use enigma_server::repository::experiment as experiment_repo;
-use enigma_server::service::experiment as experiment_service;
-use enigma_server::*;
+use enigma_admin_server::repository::experiment as experiment_repo;
+use enigma_admin_server::service::experiment as experiment_service;
+use enigma_admin_server::*;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
